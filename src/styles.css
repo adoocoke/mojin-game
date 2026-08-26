@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+    background: #09090b;
+    overflow: hidden;
+  }
+}
