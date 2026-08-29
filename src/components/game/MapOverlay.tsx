@@ -1,8 +1,20 @@
+import { useRef } from 'react'
 import { engine, useUI } from '@/game/store'
+
+function clientToWorld(svg: SVGSVGElement, clientX: number, clientY: number) {
+  const ctm = svg.getScreenCTM()
+  if (!ctm) return null
+  const pt = svg.createSVGPoint()
+  pt.x = clientX
+  pt.y = clientY
+  const p = pt.matrixTransform(ctm.inverse())
+  return { x: p.x, z: p.y }
+}
 
 /** 对局内地图查看（M 键 / 触屏🗺️按钮）：俯视示意图 + 玩家位置 + 撤离点 + 锁房 */
 export function MapOverlay() {
   const ui = useUI()
+  const svgRef = useRef<SVGSVGElement>(null)
   if (ui.phase !== 'playing' || !ui.mapOpen) return null
   const S = 140 // 地图半径
   const mapName = ui.mapId === 'tower' ? '高塔禁区' : ui.mapId === 'prison' ? '潮汐监狱' : ui.mapId === 'snow' ? '雪地雷达站' : ui.mapId === 'desert' ? '沙海古城' : '废弃矿区'
@@ -14,9 +26,21 @@ export function MapOverlay() {
       <div className="relative rounded-xl border border-zinc-600 bg-zinc-950/95 p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="text-amber-300 font-black tracking-widest">🗺️ {mapName}</span>
-          <span className="text-zinc-500 text-xs">按 M 关闭</span>
+          <span className="text-zinc-500 text-xs">{ui.creator ? '点击地图瞬移 · M 关闭' : '按 M 关闭'}</span>
         </div>
-        <svg viewBox={`${-S} ${-S} ${S * 2} ${S * 2}`} className="w-[min(70vh,520px)] h-[min(70vh,520px)]">
+        <svg
+          ref={svgRef}
+          viewBox={`${-S} ${-S} ${S * 2} ${S * 2}`}
+          className={`w-[min(70vh,520px)] h-[min(70vh,520px)] ${ui.creator ? 'cursor-crosshair' : ''}`}
+          onClick={(e) => {
+            if (!ui.creator) return
+            const svg = svgRef.current
+            if (!svg) return
+            const w = clientToWorld(svg, e.clientX, e.clientY)
+            if (!w) return
+            engine.creatorTeleport(w.x, w.z)
+          }}
+        >
           {/* 边界与网格道路 */}
           <rect x={-S} y={-S} width={S * 2} height={S * 2} fill={ui.mapId === 'snow' ? '#c8d4e0' : ui.mapId === 'desert' ? '#c9b078' : '#3a4432'} stroke="#7a7568" strokeWidth="3" />
           {ui.mapId !== 'snow' && ui.mapId !== 'desert' && [-80, -40, 0, 40, 80].map(i => (
@@ -104,6 +128,7 @@ export function MapOverlay() {
           <span>🔑 锁房（需房卡）</span>
           <span><span className="text-[#a89a80]">■</span> 平房</span>
           {ui.revealEnemies.length > 0 && <span><span className="text-red-500">●</span> 敌人（侦察脉冲）</span>}
+          {ui.creator && <span className="text-amber-300">🛠️ 点击任意位置瞬移</span>}
         </div>
       </div>
     </div>
