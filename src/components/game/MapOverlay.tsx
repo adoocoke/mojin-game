@@ -16,7 +16,7 @@ export function MapOverlay() {
   const ui = useUI()
   const svgRef = useRef<SVGSVGElement>(null)
   if (ui.phase !== 'playing' || !ui.mapOpen) return null
-  const S = 140 // 地图半径
+  const S = ui.mapSize || 140
   const mapName = ui.mapId === 'tower' ? '高塔禁区' : ui.mapId === 'prison' ? '潮汐监狱' : ui.mapId === 'snow' ? '雪地雷达站' : ui.mapId === 'desert' ? '沙海古城' : '废弃矿区'
   // 玩家朝向箭头（yaw 的前向为 (-sin, -cos)）
   const fx = -Math.sin(ui.playerYaw), fz = -Math.cos(ui.playerYaw)
@@ -68,7 +68,7 @@ export function MapOverlay() {
                 <circle cx={m.x} cy={m.z} r="7" fill="#0a2a3a" stroke="#22d3ee" strokeWidth="1.5">
                   <animate attributeName="opacity" values="1;0.5;1" dur="1.2s" repeatCount="indefinite" />
                 </circle>
-                <text x={m.x} y={m.z + 4} textAnchor="middle" fontSize="9">🪂</text>
+                <text x={m.x} y={m.z + 4} textAnchor="middle" fontSize="9">🪁</text>
               </g>
             )
             if (m.kind === 'gas') return (

@@ -15,6 +15,7 @@ import { OnlinePanel } from '@/components/game/OnlinePanel'
 import { CampaignScreen, CampaignResultOverlay } from '@/components/game/CampaignScreen'
 import { InspectOverlay } from '@/components/game/InspectOverlay'
 import { HideoutPanel } from '@/components/game/HideoutPanel'
+import { LoginGate } from '@/components/game/LoginGate'
 import { roomFromUrl } from '@/game/net'
 import { TRPCProvider } from '@/providers/trpc'
 
@@ -22,7 +23,9 @@ export default function App() {
   return (
     <TRPCProvider>
       <div className="fixed inset-0 bg-black overflow-hidden">
-        <GameStage />
+        <LoginGate>
+          <GameStage />
+        </LoginGate>
       </div>
     </TRPCProvider>
   )
@@ -37,6 +40,7 @@ function GameStage() {
   useEffect(() => {
     const rid = roomFromUrl()
     if (rid) { uiState.vsRoomUrl = rid; uiState.vsOpen = true }
+    try { void (screen.orientation as unknown as { lock?: (m: string) => Promise<void> })?.lock?.('landscape') } catch { /* 桌面忽略 */ }
   }, [])
 
   useEffect(() => {
