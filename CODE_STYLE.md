@@ -65,16 +65,17 @@ npm run ci
 
 每次提交代码、文档、Backlog，必须同时推到下面两个仓库，缺一不可，不要只推其中一个：
 
-1. **主仓库（私有，优先）**：https://github.com/kenvin-du/mojin-game.git
-2. **镜像仓库（公开）**：https://github.com/adoocoke/mojin-game.git
+1. **部署源（公开，发版从这里出）**：https://github.com/adoocoke/mojin-game.git
+2. **备份仓（只做推送备份，不从此部署）**：https://github.com/kenvin-du/mojin-game.git
 
 约定：
 
-- 默认目标永远是 `kenvin-du/mojin-game`，再镜像一份到 `adoocoke/mojin-game`
-- 不要把 `adoocoke` 当成唯一仓库
-- 连接器若只能写 `adoocoke`，用 `kenvin-du` 的写权限补推主仓库
+- 线上 / 预览以后都从 `adoocoke/mojin-game` 部署
+- `kenvin-du/mojin-game` 只当备份，改完仍要双推过去，但不作为发版源
+- 不要只推其中一个仓库
 - 不要把 token / PAT 写进仓库文件
 - 回复里写清两个仓库各自的 commit SHA
+- 不要主动新建 Vercel 项目，除非用户明确要求发版
 
 ## Git 提交建议
 
