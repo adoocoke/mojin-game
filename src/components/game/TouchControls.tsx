@@ -10,7 +10,10 @@ export function TouchControls() {
   const joyCenter = useRef({ x: 0, y: 0 })
   const lookId = useRef<number | null>(null)
   const lookLast = useRef({ x: 0, y: 0 })
+  const fireId = useRef<number | null>(null)
+  const fireLast = useRef({ x: 0, y: 0 })
   const [adsOn, setAdsOn] = useState(false)
+  const [firing, setFiring] = useState(false)
   const visible = ui.phase === 'playing' && !ui.invOpen
 
   // 界面隐藏（开背包/阵亡/撤离）时强制复位，防止指针状态卡死
@@ -18,7 +21,9 @@ export function TouchControls() {
     if (!visible) {
       joyId.current = null
       lookId.current = null
+      fireId.current = null
       setJoy(null)
+      setFiring(false)
       engine.mobileMove(0, 0, false)
       engine.mobileFire(false)
     }
@@ -27,7 +32,7 @@ export function TouchControls() {
   // 切到匕首时复位瞄准按钮高亮
   useEffect(() => { if (ui.gun?.melee) setAdsOn(false) }, [ui.gun?.melee])
 
-  // 全局兜底：即使事件被其他元素吞掉，也一定能释放摇杆/视角/开火
+  // 全局兜底：只释放对应那根手指，开火/走位/转视角互不打断
   useEffect(() => {
     const clear = (e: PointerEvent) => {
       if (e.pointerId === joyId.current) {
@@ -36,7 +41,11 @@ export function TouchControls() {
         engine.mobileMove(0, 0, false)
       }
       if (e.pointerId === lookId.current) lookId.current = null
-      engine.mobileFire(false)
+      if (e.pointerId === fireId.current) {
+        fireId.current = null
+        setFiring(false)
+        engine.mobileFire(false)
+      }
     }
     window.addEventListener('pointerup', clear)
     window.addEventListener('pointercancel', clear)
@@ -89,6 +98,31 @@ export function TouchControls() {
   }
   const onLookEnd = (e: React.PointerEvent) => {
     if (e.pointerId === lookId.current) lookId.current = null
+  }
+
+  /** 按住开火键：持续射击；同一根手指滑动 = 转准星（可同时左手走位） */
+  const onFireStart = (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    fireId.current = e.pointerId
+    fireLast.current = { x: e.clientX, y: e.clientY }
+    setFiring(true)
+    engine.mobileFire(true)
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch { /* 旧浏览器忽略 */ }
+  }
+  const onFireMove = (e: React.PointerEvent) => {
+    if (e.pointerId !== fireId.current) return
+    const dx = e.clientX - fireLast.current.x
+    const dy = e.clientY - fireLast.current.y
+    fireLast.current = { x: e.clientX, y: e.clientY }
+    // 开火键面积小，滑动灵敏度略高于右侧滑屏
+    if (dx !== 0 || dy !== 0) engine.mobileLook(dx * 1.55, dy * 1.55)
+  }
+  const onFireEnd = (e: React.PointerEvent) => {
+    if (e.pointerId !== fireId.current) return
+    fireId.current = null
+    setFiring(false)
+    engine.mobileFire(false)
   }
 
   const btn = 'flex items-center justify-center rounded-full bg-white/10 border border-white/25 text-white font-bold backdrop-blur-sm active:bg-white/30 select-none touch-none'
@@ -157,11 +191,11 @@ export function TouchControls() {
             onClick={() => engine.mobileInteract()}
           >搜索</button>
           <button
-            className={`${btn} w-24 h-24 text-lg border-red-400/60 bg-red-500/20`}
-            onPointerDown={(e) => { e.preventDefault(); engine.mobileFire(true) }}
-            onPointerUp={() => engine.mobileFire(false)}
-            onPointerCancel={() => engine.mobileFire(false)}
-            onPointerLeave={() => engine.mobileFire(false)}
+            className={`${btn} w-24 h-24 text-lg border-red-400/60 ${firing ? 'bg-red-500/45 border-red-300' : 'bg-red-500/20'}`}
+            onPointerDown={onFireStart}
+            onPointerMove={onFireMove}
+            onPointerUp={onFireEnd}
+            onPointerCancel={onFireEnd}
           >开火</button>
         </div>
       </div>
